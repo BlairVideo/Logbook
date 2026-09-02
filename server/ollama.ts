@@ -27,7 +27,12 @@ export async function chatCompletion(
   const res = await fetch(`${env.ollamaHost}/api/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model, messages, stream: false }),
+    body: JSON.stringify({
+      model,
+      messages,
+      stream: false,
+      options: { num_ctx: env.chatNumCtx },
+    }),
   });
 
   if (!res.ok) {
