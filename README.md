@@ -11,7 +11,7 @@ using a local Ollama model — no cloud LLM, no data leaves the machine.
 - The chat and embedding models pulled:
 
   ```bash
-  ollama pull gemma3:12b
+  ollama pull command-r7b
   ollama pull nomic-embed-text
   ```
 
