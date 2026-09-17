@@ -5,6 +5,7 @@ import { extractDocxParagraphs } from "./extractors/docx";
 import { extractPdfParagraphs } from "./extractors/pdf";
 import { chunkParagraphs, type RawParagraph } from "./chunk";
 import { checkGarbled } from "./garbledText";
+import { ProgressBar } from "./progress";
 import { embed } from "../server/ollama";
 import type { Chunk, ChunkIndex } from "../shared/types";
 
@@ -95,11 +96,12 @@ async function main() {
 
   console.log(`Found ${documents.length} document(s): ${documents.map((d) => d.file).join(", ")}`);
 
+  const startedAt = Date.now();
   const allChunks: Chunk[] = [];
   let hadFailure = false;
 
-  for (const doc of documents) {
-    console.log(`\nIngesting: ${doc.title}`);
+  for (const [docIndex, doc] of documents.entries()) {
+    console.log(`\n[${docIndex + 1}/${documents.length}] Ingesting: ${doc.title}`);
     const paragraphs = await doc.extract();
     applyKnownTextCorrections(paragraphs);
 
@@ -141,22 +143,28 @@ async function main() {
     }
 
     console.log(`  Embedding ${textChunks.length} chunks with ${EMBED_MODEL}...`);
+    const progress = new ProgressBar("embedding", textChunks.length);
     for (let i = 0; i < textChunks.length; i++) {
       const chunk = textChunks[i];
       let embedding: number[];
       try {
         embedding = await embed(chunk.text, EMBED_MODEL);
       } catch (err) {
-        console.warn(
-          `  chunk ${i} (${chunk.text.length} chars) exceeded the embedding model's context — retrying truncated`,
+        progress.interrupt(() =>
+          console.warn(
+            `  chunk ${i} (${chunk.text.length} chars) exceeded the embedding model's context — retrying truncated`,
+          ),
         );
         const truncated = chunk.text.slice(0, Math.floor(chunk.text.length * 0.6));
         try {
           embedding = await embed(truncated, EMBED_MODEL);
           chunk.text = truncated;
         } catch {
-          console.error(`  ERROR: chunk ${i} could not be embedded even after truncation — skipping`);
+          progress.interrupt(() =>
+            console.error(`  ERROR: chunk ${i} could not be embedded even after truncation — skipping`),
+          );
           hadFailure = true;
+          progress.tick();
           continue;
         }
       }
@@ -167,7 +175,9 @@ async function main() {
         source: { file: doc.file, title: doc.title, page: chunk.page, section: chunk.section },
         charCount: chunk.text.length,
       });
+      progress.tick();
     }
+    progress.done();
   }
 
   const index: ChunkIndex = {
@@ -180,7 +190,8 @@ async function main() {
   };
 
   await writeFile(OUTPUT_PATH, JSON.stringify(index, null, 2));
-  console.log(`\nWrote ${allChunks.length} chunks to ${OUTPUT_PATH}`);
+  const totalSec = (Date.now() - startedAt) / 1000;
+  console.log(`\nWrote ${allChunks.length} chunks to ${OUTPUT_PATH} in ${totalSec.toFixed(1)}s`);
 
   if (hadFailure) {
     console.error("\nIngestion completed with errors — see above.");

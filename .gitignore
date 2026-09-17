@@ -9,6 +9,11 @@
 # Ingestion output (regenerated via `npm run ingest`)
 /server/data/*.json
 
+# Audit log, its encryption key, and the admin passphrase (local-only, never committed)
+/server/data/audit-log.jsonl
+/server/data/audit-key.bin
+/server/data/admin-key.txt
+
 # Tesseract OCR language data (downloaded on first OCR fallback during ingest)
 /eng.traineddata
 

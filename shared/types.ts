@@ -39,6 +39,37 @@ export interface ModelsResponseBody {
   current: string;
 }
 
+export interface AuditLogChatItem {
+  id: string;
+  timestamp: string;
+  type: "chat";
+  model?: string;
+  sourceTitles?: string[];
+  question: string;
+  answer: string;
+}
+
+export interface AuditLogModelChangeItem {
+  id: string;
+  timestamp: string;
+  type: "model_change";
+  previousModel?: string;
+  newModel?: string;
+}
+
+export type AuditLogItem = AuditLogChatItem | AuditLogModelChangeItem;
+
+export interface AuditLogResponseBody {
+  entries: AuditLogItem[];
+}
+
+// /api/admin/ingest streams newline-delimited JSON events so the UI can show
+// a live log while re-ingestion runs (it can take minutes on large PDFs).
+export type IngestStreamEvent =
+  | { type: "log"; line: string }
+  | { type: "done"; success: boolean }
+  | { type: "error"; error: string };
+
 export interface ChunkSource {
   file: string;
   title: string;

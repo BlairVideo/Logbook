@@ -15,7 +15,7 @@ const HEADING_STYLE_MAP = [
 // separator at all (observed: "...per year.PART-TIME EMPLOYEES..." — two
 // distinct bullets fused mid-sentence). This walks each list item explicitly
 // so bullets stay delimited, recursing into nested sub-lists.
-function listToText($: CheerioAPI, list: Cheerio<AnyNode>): string {
+export function listToText($: CheerioAPI, list: Cheerio<AnyNode>): string {
   const items: string[] = [];
 
   list.children("li").each((_, li) => {
@@ -43,7 +43,7 @@ function listToText($: CheerioAPI, list: Cheerio<AnyNode>): string {
 }
 
 // $(table).text() similarly fuses every cell together with no separator.
-function tableToText($: CheerioAPI, table: Cheerio<AnyNode>): string {
+export function tableToText($: CheerioAPI, table: Cheerio<AnyNode>): string {
   const rows: string[] = [];
 
   table.find("tr").each((_, tr) => {

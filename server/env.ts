@@ -18,4 +18,13 @@ export const env = {
   // longer trades a bit of idle memory for consistently fast responses during
   // a session.
   chatKeepAlive: process.env.CHAT_KEEP_ALIVE ?? "30m",
+  // Optional 64-char hex (32-byte) key for encrypting the audit log at rest.
+  // If unset, a key is generated on first run and stored at
+  // server/data/audit-key.bin — fine for a single local machine, but set
+  // this explicitly (and keep it out of git) for anything longer-lived.
+  auditLogKey: process.env.AUDIT_LOG_KEY,
+  // Optional shared admin passphrase gating model switching, the audit log,
+  // and re-running ingestion. If unset, one is generated on first run and
+  // stored at server/data/admin-key.txt (see server/adminAuth.ts).
+  adminKey: process.env.ADMIN_KEY,
 };

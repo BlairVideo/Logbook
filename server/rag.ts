@@ -14,6 +14,12 @@ export async function loadIndex(): Promise<ChunkIndex> {
   return cachedIndex;
 }
 
+// Called after a successful re-ingest so the next chat picks up the fresh
+// index immediately instead of requiring a server restart.
+export function invalidateIndex(): void {
+  cachedIndex = null;
+}
+
 export function cosineSimilarity(a: number[], b: number[]): number {
   let dot = 0;
   let normA = 0;

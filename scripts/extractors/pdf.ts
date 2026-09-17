@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { createCanvas } from "@napi-rs/canvas";
 import { createWorker, type Worker } from "tesseract.js";
 import { checkGarbled } from "../garbledText";
+import { ProgressBar } from "../progress";
 import type { RawParagraph } from "../chunk";
 
 // pdfjs-dist's legacy Node build works without a DOM/worker setup.
@@ -20,7 +21,7 @@ interface PdfPage {
   render: (params: { canvasContext: unknown; viewport: unknown }) => { promise: Promise<void> };
 }
 
-async function extractPageText(page: PdfPage): Promise<string> {
+export async function extractPageText(page: PdfPage): Promise<string> {
   const content = await page.getTextContent();
   const items = content.items as PageTextItem[];
 
@@ -62,6 +63,7 @@ export async function extractPdfParagraphs(filePath: string): Promise<RawParagra
 
   const paragraphs: RawParagraph[] = [];
   let ocrWorker: Worker | null = null;
+  const progress = new ProgressBar("extracting pages", doc.numPages);
 
   try {
     for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
@@ -70,8 +72,10 @@ export async function extractPdfParagraphs(filePath: string): Promise<RawParagra
 
       let { garbled, reasons } = checkGarbled(text);
       if (garbled) {
-        console.warn(
-          `  page ${pageNumber}: garbled text detected (${reasons.join(", ")}) — attempting OCR fallback`,
+        progress.interrupt(() =>
+          console.warn(
+            `  page ${pageNumber}: garbled text detected (${reasons.join(", ")}) — attempting OCR fallback`,
+          ),
         );
         ocrWorker ??= await createWorker("eng");
         const ocrText = await ocrPage(page, ocrWorker);
@@ -81,7 +85,9 @@ export async function extractPdfParagraphs(filePath: string): Promise<RawParagra
           ({ garbled, reasons } = ocrCheck);
         }
         if (garbled) {
-          console.warn(`  page ${pageNumber}: MANUAL REVIEW NEEDED (${reasons.join(", ")})`);
+          progress.interrupt(() =>
+            console.warn(`  page ${pageNumber}: MANUAL REVIEW NEEDED (${reasons.join(", ")})`),
+          );
         }
       }
 
@@ -89,8 +95,11 @@ export async function extractPdfParagraphs(filePath: string): Promise<RawParagra
         const trimmed = para.trim();
         if (trimmed) paragraphs.push({ text: trimmed, page: pageNumber });
       }
+
+      progress.tick();
     }
   } finally {
+    progress.done();
     if (ocrWorker) await ocrWorker.terminate();
   }
 
