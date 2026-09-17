@@ -18,12 +18,25 @@ export interface ChatResponseBody {
   sources: SourceRef[];
 }
 
+// /api/chat streams newline-delimited JSON events of this shape rather than a
+// single ChatResponseBody, so the UI can render tokens as they're generated.
+export type ChatStreamEvent =
+  | { type: "sources"; sources: SourceRef[] }
+  | { type: "delta"; content: string }
+  | { type: "error"; error: string }
+  | { type: "done" };
+
 export interface HealthResponseBody {
   ok: boolean;
   chatModel: string;
   embedModel: string;
   indexedChunks: number;
   ollamaReachable: boolean;
+}
+
+export interface ModelsResponseBody {
+  models: string[];
+  current: string;
 }
 
 export interface ChunkSource {

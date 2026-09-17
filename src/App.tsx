@@ -3,8 +3,8 @@ import Header from "./components/Header";
 import Footer from "./components/Footer";
 import ChatWindow, { type DisplayMessage } from "./components/ChatWindow";
 import ChatInput from "./components/ChatInput";
-import { sendChatMessage } from "./lib/api";
-import type { ChatMessage } from "../shared/types";
+import { streamChatMessage } from "./lib/api";
+import type { ChatMessage, SourceRef } from "../shared/types";
 
 export default function App() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -15,9 +15,29 @@ export default function App() {
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsLoading(true);
 
+    let sources: SourceRef[] | undefined;
+    let started = false;
+
     try {
-      const { answer, sources } = await sendChatMessage(text, history);
-      setMessages((prev) => [...prev, { role: "assistant", content: answer, sources }]);
+      await streamChatMessage(text, history, {
+        onSources: (s) => {
+          sources = s;
+        },
+        onDelta: (chunk) => {
+          if (!started) {
+            started = true;
+            setIsLoading(false);
+            setMessages((prev) => [...prev, { role: "assistant", content: chunk, sources }]);
+            return;
+          }
+          setMessages((prev) => {
+            const next = [...prev];
+            const last = next[next.length - 1];
+            next[next.length - 1] = { ...last, content: last.content + chunk };
+            return next;
+          });
+        },
+      });
     } catch (err) {
       setMessages((prev) => [
         ...prev,

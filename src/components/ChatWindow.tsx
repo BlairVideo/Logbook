@@ -25,8 +25,8 @@ export default function ChatWindow({ messages, isLoading }: Props) {
     <div className="flex flex-1 flex-col gap-3 overflow-y-auto px-6 py-4">
       {messages.length === 0 && !isLoading && (
         <div className="m-auto max-w-md text-center text-sm text-slate-400">
-          Ask Buc anything about Blair's employee handbook, benefits guide, or student
-          handbook — for example, "How much PTO do I accrue?" or "What's the dress code?"
+          Ask Buc anything about Blair's employee handbook or benefits guide — for
+          example, "How much PTO do I accrue?" or "What's the dress code?"
         </div>
       )}
       {messages.map((m, i) => (

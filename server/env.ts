@@ -13,4 +13,9 @@ export const env = {
   // grounding rules and/or the earliest retrieved excerpts. Must be set
   // explicitly per-request via options.num_ctx.
   chatNumCtx: Number(process.env.CHAT_NUM_CTX ?? 16384),
+  // Ollama unloads a model from memory 5 minutes after its last use by default,
+  // so the next chat pays a multi-second reload cost. Keeping it resident for
+  // longer trades a bit of idle memory for consistently fast responses during
+  // a session.
+  chatKeepAlive: process.env.CHAT_KEEP_ALIVE ?? "30m",
 };
